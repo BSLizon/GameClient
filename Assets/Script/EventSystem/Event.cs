@@ -1,6 +1,1 @@
-﻿using System;
-using System.Collections;
-
-public class Event
-{
-}
+﻿public class Event { }

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 public class EventSystem
 {
-    public delegate void Handlers(Object e);
+    public delegate void Handlers(Event e);
     Dictionary<Type, Handlers> bus = new Dictionary<Type, Handlers>();
 
     public void Sub(Type t, Handlers hs)
@@ -26,7 +26,7 @@ public class EventSystem
         }
     }
 
-    public void Notify(Object e)
+    public void Notify(Event e)
     {
         System.Type t = e.GetType();
         if (bus.ContainsKey(t))
