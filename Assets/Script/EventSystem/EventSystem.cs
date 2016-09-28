@@ -1,11 +1,13 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using UnityEngine;
+using System.Collections.Generic;
 
 public class EventSystem
 {
-    public delegate void Handlers(Event evt);
-    Dictionary<Event.Type, Handlers> bus = new Dictionary<Event.Type, Handlers>();
+    public delegate void Handlers(Event e);
+    Dictionary<System.Type, Handlers> bus = new Dictionary<System.Type, Handlers>();
 
-    public void Sub(Event.Type t, Handlers hdlr)
+    public void Sub(System.Type t, Handlers hdlr)
     {
         if (bus.ContainsKey(t))
         {
@@ -14,10 +16,10 @@ public class EventSystem
         else
         {
             bus[t] = hdlr;
-        } 
+        }
     }
 
-    public void UnSub(Event.Type t, Handlers hdlr)
+    public void UnSub(System.Type t, Handlers hdlr)
     {
         if (bus.ContainsKey(t))
         {
@@ -25,11 +27,12 @@ public class EventSystem
         }
     }
 
-    public void Notify(Event evt)
+    public void Notify(Event e)
     {
-        if (bus.ContainsKey(evt.type))
+        System.Type t = e.GetType();
+        if (bus.ContainsKey(t))
         {
-            bus[evt.type](evt);
+            bus[t](e);
         }
         
     }
