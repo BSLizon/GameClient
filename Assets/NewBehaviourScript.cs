@@ -6,13 +6,13 @@ public class NewBehaviourScript : MonoBehaviour
 	void Start ()
     {
         EventSystem es = new EventSystem();
-        es.Sub(typeof(MyEvent), func);
-        es.Notify(new MyEvent());
+        es.Sub(typeof(NewBehaviourScript), func);
+        es.Notify(new NewBehaviourScript());
 	}
 
-    public void func(Event e)
+    public void func(System.Object e)
     {
-        MyEvent me = e as MyEvent;
+        NewBehaviourScript me = e as NewBehaviourScript;
         Debug.Log("asdf");
     }
 }
