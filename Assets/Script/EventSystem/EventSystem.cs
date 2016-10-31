@@ -1,4 +1,5 @@
-﻿using System;
+﻿using UnityEngine;
+using System;
 using System.Collections.Generic;
 
 public class EventSystem
@@ -33,6 +34,9 @@ public class EventSystem
         {
             bus[t](e);
         }
-        
+        else
+        {
+            GameLog.Warn("No Event Handler: " + e.GetType());
+        }
     }
 }

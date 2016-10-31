@@ -6,7 +6,7 @@ public class NewBehaviourScript : MonoBehaviour
 	void Start ()
     {
         EventSystem es = new EventSystem();
-        es.Sub(typeof(MyEvent), func);
+        //es.Sub(typeof(MyEvent), func);
         es.Notify(new MyEvent());
 	}
 
