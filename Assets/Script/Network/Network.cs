@@ -18,13 +18,6 @@ public class Network
 
     Socket _socket;
     State _state = State.DisConnected;
-    public State state
-    {
-        get
-        {
-            return _state;
-        }
-    }
 
     public Network()
     {
@@ -33,33 +26,46 @@ public class Network
 
     public void Reconnect()
     {
-        _state = State.DisConnected;
-        if (_socket != null)
+        lock (this)
         {
-            _socket.BeginDisconnect(false, new AsyncCallback(DisconnectCallback), _socket);
-            _socket = null;
-        }
+            try
+            {
+                _state = State.DisConnected;
+                if (_socket != null)
+                {
+                    _socket.BeginDisconnect(false, new AsyncCallback(DisconnectCallback), _socket);
+                }
 
-        IPAddress ipAddress = IPAddress.Parse(Config.serverIP);
-        IPEndPoint remoteEP = new IPEndPoint(ipAddress, Config.serverPort);
-        _socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-        _socket.BeginConnect(remoteEP, new AsyncCallback(ConnectCallback), _socket);
-        _state = State.Connecting;
+                IPAddress ipAddress = IPAddress.Parse(Config.serverIP);
+                IPEndPoint remoteEP = new IPEndPoint(ipAddress, Config.serverPort);
+                _socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                _socket.BeginConnect(remoteEP, new AsyncCallback(ConnectCallback), _socket);
+                _state = State.Connecting;
+            }
+            catch (Exception e)
+            {
+                _state = State.DisConnected;
+                Log.Warn(e.ToString());
+            }
+        }
     }
 
     void ConnectCallback(IAsyncResult ar)
     {
-        try
+        lock(this)
         {
-            Socket socket = (Socket)ar.AsyncState;
-            socket.EndConnect(ar);
-            _state = State.Connected;
-            Log.Info("Connect Complete: " + _socket.RemoteEndPoint.ToString());
-        }
-        catch (Exception e)
-        {
-            _state = State.DisConnected;
-            Log.Info(e.ToString());
+            try
+            {
+                Socket socket = (Socket)ar.AsyncState;
+                socket.EndConnect(ar);
+                _state = State.Connected;
+                Log.Info("Connect Complete: " + _socket.RemoteEndPoint.ToString());
+            }
+            catch (Exception e)
+            {
+                _state = State.DisConnected;
+                Log.Warn(e.ToString());
+            }
         }
     }
 
@@ -69,11 +75,31 @@ public class Network
         {
             Socket socket = (Socket)ar.AsyncState;
             socket.EndDisconnect(ar);
-            Log.Info("Disconnect Complete: " + _socket.RemoteEndPoint.ToString());
+            Log.Info("Disconnect Complete");
         }
         catch (Exception e)
         {
-            Log.Info(e.ToString());
+            Log.Warn(e.ToString());
+        }
+    }
+
+    void Update()
+    {
+        if (_state == State.Connected)
+        {
+            //TODO::到底同步解包分发还是异步解包分发
+        }
+        else if (_state == State.DisConnected)
+        {
+            Reconnect();
+        }
+        else if (_state == State.Connecting)
+        {
+            Log.Debug("Network Connecting: " + _socket.RemoteEndPoint.ToString());
+        }
+        else
+        {
+            Log.Warn("Unknown state: " + _state);
         }
     }
 }

@@ -5,10 +5,9 @@ public class NewBehaviourScript : MonoBehaviour
 {
 	void Start ()
     {
-        EventBus es = new EventBus();
-        //es.Sub(typeof(MyEvent), func);
-        es.Notify(new MyEvent());
-	}
+        Network.getInstance();
+        Network.getInstance().Reconnect();
+    }
 
     public void func(Event e)
     {
