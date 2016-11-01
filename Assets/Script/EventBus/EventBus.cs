@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-public class EventSystem
+public class EventBus
 {
     public delegate void Handlers(Event e);
     Dictionary<Type, Handlers> bus = new Dictionary<Type, Handlers>();
