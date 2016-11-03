@@ -46,12 +46,12 @@ public class Network
 
     public void Reconnect()
     {
-        _socketStruct.state = State.DisConnected;
         Log.Info("Socket Start Reconnect");
         try
         {
             if (_socketStruct != null)
             {
+                _socketStruct.state = State.DisConnected;
                 if (_socketStruct.socket != null)
                 {
                     _socketStruct.socket.Close(Config.socketCloseTimeout);
