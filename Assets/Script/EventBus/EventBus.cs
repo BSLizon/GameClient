@@ -4,9 +4,9 @@ using System.Collections.Generic;
 public class EventBus
 {
     public delegate void Handlers(Event e);
-    Dictionary<Type, Handlers> bus = new Dictionary<Type, Handlers>();
+    static Dictionary<Type, Handlers> bus = new Dictionary<Type, Handlers>();
 
-    public void Sub(Type t, Handlers hs)
+    public static void Sub(Type t, Handlers hs)
     {
         if (bus.ContainsKey(t))
         {
@@ -18,7 +18,7 @@ public class EventBus
         }
     }
 
-    public void UnSub(Type t, Handlers hs)
+    public static void UnSub(Type t, Handlers hs)
     {
         if (bus.ContainsKey(t))
         {
@@ -26,7 +26,7 @@ public class EventBus
         }
     }
 
-    public void Notify(Event e)
+    public static void Notify(Event e)
     {
         System.Type t = e.GetType();
         if (bus.ContainsKey(t))
