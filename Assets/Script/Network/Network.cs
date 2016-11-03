@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net;
 using System.Net.Sockets;
+using System.Collections.Generic;
 
 public class Network
 {
@@ -19,53 +20,61 @@ public class Network
     Socket _socket;
     State _state = State.DisConnected;
 
+    Queue<byte[]> sendQueue;
+    Queue<byte[]> recvQueue;
+
     public Network()
     {
+        sendQueue = new Queue<byte[]>();
+        recvQueue = new Queue<byte[]>();
         Reconnect();
     }
 
     public void Reconnect()
     {
-        lock (this)
+        try
         {
-            try
+            _state = State.DisConnected;
+            if (_socket != null)
             {
-                _state = State.DisConnected;
-                if (_socket != null)
-                {
-                    _socket.BeginDisconnect(false, new AsyncCallback(DisconnectCallback), _socket);
-                }
+                _socket.BeginDisconnect(false, new AsyncCallback(DisconnectCallback), _socket);
+            }
+        }
+        catch (Exception e)
+        {
+            Log.Warn(e.ToString());
+        }
 
-                IPAddress ipAddress = IPAddress.Parse(Config.serverIP);
-                IPEndPoint remoteEP = new IPEndPoint(ipAddress, Config.serverPort);
-                _socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                _socket.BeginConnect(remoteEP, new AsyncCallback(ConnectCallback), _socket);
-                _state = State.Connecting;
-            }
-            catch (Exception e)
-            {
-                _state = State.DisConnected;
-                Log.Warn(e.ToString());
-            }
+        try
+        {
+            IPAddress ipAddress = IPAddress.Parse(Config.serverIP);
+            IPEndPoint remoteEP = new IPEndPoint(ipAddress, Config.serverPort);
+            _state = State.Connecting;
+            _socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            _socket.BeginConnect(remoteEP, new AsyncCallback(ConnectCallback), _socket);
+        }
+        catch (Exception e)
+        {
+            _state = State.DisConnected;
+            Log.Warn(e.ToString());
         }
     }
 
     void ConnectCallback(IAsyncResult ar)
     {
-        lock(this)
+        try
         {
-            try
-            {
-                Socket socket = (Socket)ar.AsyncState;
-                socket.EndConnect(ar);
-                _state = State.Connected;
-                Log.Info("Connect Complete: " + _socket.RemoteEndPoint.ToString());
-            }
-            catch (Exception e)
-            {
-                _state = State.DisConnected;
-                Log.Warn(e.ToString());
-            }
+            Socket socket = (Socket)ar.AsyncState;
+            socket.EndConnect(ar);
+            socket.SendTimeout = Config.socketTimeout;
+            socket.NoDelay = true;
+            _state = State.Connected;
+            Log.Info("Connect Complete: " + _socket.RemoteEndPoint.ToString());
+        }
+        catch (Exception e)
+        {
+            _state = State.DisConnected;
+            Log.Warn(e.ToString());
         }
     }
 
