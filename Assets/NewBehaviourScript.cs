@@ -5,7 +5,6 @@ public class NewBehaviourScript : MonoBehaviour
 {
 	void Start ()
     {
-        Network.getInstance();
     }
 
     public void func(Event e)

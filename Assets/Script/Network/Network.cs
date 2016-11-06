@@ -66,6 +66,7 @@ public class Network
 
         _socketStruct = new SocketStruct();
         _socketStruct.socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+        _socketStruct.state = State.Connecting;
         new Thread(() => StartConnect(_socketStruct)).Start();
     }
 
@@ -73,7 +74,6 @@ public class Network
     {
         try
         {
-            socketStruct.state = State.Connecting;
             IPEndPoint remoteEP = new IPEndPoint(IPAddress.Parse(Config.serverIP), Config.serverPort);
             Log.Info("Socket Connecting: " + remoteEP.ToString());
             IAsyncResult result = socketStruct.socket.BeginConnect(remoteEP, null, null);
