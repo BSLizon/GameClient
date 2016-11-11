@@ -8,4 +8,6 @@
     public static int socketSendTimeout = 4000; //ms
     public static int socketCloseTimeout = 10; //ms
     public static int socketConnectTimeout = 5000; //ms
+    public static int maxPackSize = 1 << 16; //1MB，不要超过31
+    public static int packSizeLength = 4; //sizeof(uint32)
 }

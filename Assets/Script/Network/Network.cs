@@ -29,18 +29,16 @@ public class Network
     {
         public Socket socket;
         public State state = State.DisConnected;
+        public byte[] recvBuf;
+        public int writeIndex;
     }
 
     volatile SocketStruct _socketStruct;
     State _oldstate = State.DisConnected; //只由Update修改和更新
-
-    Queue<byte[]> sendQueue;
-    Queue<byte[]> recvQueue;
+    
 
     public Network()
     {
-        sendQueue = new Queue<byte[]>();
-        recvQueue = new Queue<byte[]>();
         Reconnect();
     }
 
@@ -67,6 +65,8 @@ public class Network
         _socketStruct = new SocketStruct();
         _socketStruct.socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
         _socketStruct.state = State.Connecting;
+        _socketStruct.recvBuf = new byte[Config.maxPackSize * 2];
+        _socketStruct.writeIndex = 0;
         new Thread(() => StartConnect(_socketStruct)).Start();
     }
 
@@ -92,6 +92,7 @@ public class Network
             socketStruct.socket.EndConnect(result);
             socketStruct.socket.SendTimeout = Config.socketSendTimeout;
             socketStruct.socket.NoDelay = true;
+            socketStruct.socket.Blocking = false;
             socketStruct.state = State.Connected;
             Log.Info("Socket Connect Complete: " + socketStruct.socket.RemoteEndPoint.ToString());
         }
@@ -114,7 +115,41 @@ public class Network
 
             try
             {
-                //TODO::同步解包分发
+                //Receive
+                int count = _socketStruct.socket.Receive(_socketStruct.recvBuf, _socketStruct.writeIndex, _socketStruct.recvBuf.Length - _socketStruct.writeIndex, SocketFlags.None);
+                if (count > 0)
+                {
+                    _socketStruct.writeIndex += count;
+
+                    int readIndex = 0;
+
+                    while (_socketStruct.writeIndex - readIndex >= Config.packSizeLength)
+                    {
+                        UInt32 length = BitConverter.ToUInt32(_socketStruct.recvBuf, readIndex);
+                        if (length > Config.maxPackSize)
+                        {
+                            throw new Exception("Pack out of size.");
+                        }
+
+                        if (_socketStruct.writeIndex - readIndex >= length + Config.packSizeLength)
+                        {
+                            //TODO::readIndex += Config.packSizeLength，读出length长的字节，这是Pack，解析并分发执行完毕
+                            readIndex += (int)length + Config.packSizeLength;
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+
+
+                    int reCount = _socketStruct.writeIndex - readIndex;
+                    Buffer.BlockCopy(_socketStruct.recvBuf, readIndex, _socketStruct.recvBuf, 0, reCount);
+                    _socketStruct.writeIndex = reCount;
+                }
+
+                //Send
+                //需要发送队列，类型由Protobuf决定，转化为byte[]并推入socket
             }
             catch (Exception e)
             {
