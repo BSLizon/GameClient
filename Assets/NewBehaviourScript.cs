@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using System.Collections;
 
 public class NewBehaviourScript : MonoBehaviour
@@ -10,12 +11,16 @@ public class NewBehaviourScript : MonoBehaviour
 
     void Update()
     {
+        for (int i = 0; i < 20; i++)
+        {
+            Network.getInstance().Send(System.Text.Encoding.Default.GetBytes("Hello World"));
+        }
         Network.getInstance().Update();
     }
 
     void f(Event e)
     {
-        Debug.Log((e as Network.Event_RecvMessage).data);
+        Debug.Log(System.Text.Encoding.Default.GetString((e as Network.Event_RecvMessage).data));
     }
 }
 

@@ -122,39 +122,42 @@ public class Network
 
             try
             {
-                int count = _socketStruct.socket.Receive(_socketStruct.recvBuf, _socketStruct.writeIndex, _socketStruct.recvBuf.Length - _socketStruct.writeIndex, SocketFlags.None);
-                if (count > 0)
+                if (_socketStruct.socket.Available > 0)
                 {
-                    _socketStruct.writeIndex += count;
-
-                    int readIndex = 0;
-
-                    while (_socketStruct.writeIndex - readIndex >= Config.packSizeLength)
+                    int count = _socketStruct.socket.Receive(_socketStruct.recvBuf, _socketStruct.writeIndex, _socketStruct.recvBuf.Length - _socketStruct.writeIndex, SocketFlags.None);
+                    if (count > 0)
                     {
-                        UInt32 length = (UInt32)System.Net.IPAddress.NetworkToHostOrder(BitConverter.ToUInt32(_socketStruct.recvBuf, readIndex));
-                        if (length > Config.maxInboundPackSize || length <= 0)
+                        _socketStruct.writeIndex += count;
+
+                        int readIndex = 0;
+
+                        while (_socketStruct.writeIndex - readIndex >= Config.packSizeLength)
                         {
-                            throw new Exception("wrong pack size.");
+                            UInt32 length = (UInt32)System.Net.IPAddress.NetworkToHostOrder((int)BitConverter.ToUInt32(_socketStruct.recvBuf, readIndex));
+                            if (length > Config.maxInboundPackSize || length <= 0)
+                            {
+                                throw new Exception("wrong pack size.");
+                            }
+
+                            if (_socketStruct.writeIndex - readIndex >= length + Config.packSizeLength)
+                            {
+                                byte[] data = new byte[length];
+                                Buffer.BlockCopy(_socketStruct.recvBuf, readIndex + Config.packSizeLength, data, 0, (int)length);
+                                EventBus.Notify(new Event_RecvMessage { data = data });
+
+                                readIndex += (int)length + Config.packSizeLength;
+                            }
+                            else
+                            {
+                                break;
+                            }
                         }
 
-                        if (_socketStruct.writeIndex - readIndex >= length + Config.packSizeLength)
-                        {
-                            byte[] data = new byte[length];
-                            Buffer.BlockCopy(_socketStruct.recvBuf, readIndex + Config.packSizeLength, data, 0, (int)length);
-                            EventBus.Notify(new Event_RecvMessage { data = data});
 
-                            readIndex += (int)length + Config.packSizeLength;
-                        }
-                        else
-                        {
-                            break;
-                        }
+                        int reCount = _socketStruct.writeIndex - readIndex;
+                        Buffer.BlockCopy(_socketStruct.recvBuf, readIndex, _socketStruct.recvBuf, 0, reCount);
+                        _socketStruct.writeIndex = reCount;
                     }
-
-
-                    int reCount = _socketStruct.writeIndex - readIndex;
-                    Buffer.BlockCopy(_socketStruct.recvBuf, readIndex, _socketStruct.recvBuf, 0, reCount);
-                    _socketStruct.writeIndex = reCount;
                 }
 
                 while (_socketStruct.sendDataQ.Count > 0)
@@ -166,7 +169,8 @@ public class Network
                         continue;
                     }
                     byte[] sendData = new byte[Config.packSizeLength + orgData.Length];
-                    Buffer.BlockCopy(BitConverter.GetBytes((UInt32)System.Net.IPAddress.HostToNetworkOrder((UInt32)orgData.Length)), 0, sendData, 0, Config.packSizeLength);
+                    var test = System.Net.IPAddress.HostToNetworkOrder(orgData.Length);
+                    Buffer.BlockCopy(BitConverter.GetBytes((UInt32)System.Net.IPAddress.HostToNetworkOrder(orgData.Length)), 0, sendData, 0, Config.packSizeLength);
                     Buffer.BlockCopy(orgData, 0, sendData, Config.packSizeLength, orgData.Length);
                     _socketStruct.socket.BeginSend(sendData, 0, sendData.Length, SocketFlags.None, null, null);
                 }
@@ -195,5 +199,10 @@ public class Network
         {
             Log.Warn("Unhandle state: " + _socketStruct.state);
         }
+    }
+
+    public void Send(byte[] data)
+    {
+        _socketStruct.sendDataQ.Enqueue(data);
     }
 }
