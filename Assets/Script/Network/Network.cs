@@ -133,9 +133,9 @@ public class Network
                     while (_socketStruct.writeIndex - readIndex >= Config.packSizeLength)
                     {
                         UInt32 length = (UInt32)System.Net.IPAddress.NetworkToHostOrder(BitConverter.ToUInt32(_socketStruct.recvBuf, readIndex));
-                        if (length > Config.maxInboundPackSize)
+                        if (length > Config.maxInboundPackSize || length <= 0)
                         {
-                            throw new Exception("Pack out of size.");
+                            throw new Exception("wrong pack size.");
                         }
 
                         if (_socketStruct.writeIndex - readIndex >= length + Config.packSizeLength)
@@ -161,6 +161,10 @@ public class Network
                 while (_socketStruct.sendDataQ.Count > 0)
                 {
                     byte[] orgData = _socketStruct.sendDataQ.Dequeue();
+                    if (orgData.Length == 0)
+                    {
+                        throw new Exception("wrong pack size.");
+                    }
                     byte[] sendData = new byte[Config.packSizeLength + orgData.Length];
                     Buffer.BlockCopy(BitConverter.GetBytes((UInt32)System.Net.IPAddress.HostToNetworkOrder((UInt32)orgData.Length)), 0, sendData, 0, Config.packSizeLength);
                     Buffer.BlockCopy(orgData, 0, sendData, Config.packSizeLength, orgData.Length);
