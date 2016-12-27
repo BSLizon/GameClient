@@ -132,7 +132,7 @@ public class Network
 
                     while (_socketStruct.writeIndex - readIndex >= Config.packSizeLength)
                     {
-                        UInt32 length = (UInt32)System.Net.IPAddress.NetworkToHostOrder((long)BitConverter.ToUInt32(_socketStruct.recvBuf, readIndex));
+                        UInt32 length = (UInt32)System.Net.IPAddress.NetworkToHostOrder(BitConverter.ToUInt32(_socketStruct.recvBuf, readIndex));
                         if (length > Config.maxInboundPackSize)
                         {
                             throw new Exception("Pack out of size.");
