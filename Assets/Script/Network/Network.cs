@@ -122,7 +122,6 @@ public class Network
 
             try
             {
-                //Receive
                 int count = _socketStruct.socket.Receive(_socketStruct.recvBuf, _socketStruct.writeIndex, _socketStruct.recvBuf.Length - _socketStruct.writeIndex, SocketFlags.None);
                 if (count > 0)
                 {
@@ -163,7 +162,7 @@ public class Network
                     byte[] orgData = _socketStruct.sendDataQ.Dequeue();
                     if (orgData.Length == 0)
                     {
-                        //抛个事件控制台输出一下
+                        Log.Warn("pack size zero");
                         continue;
                     }
                     byte[] sendData = new byte[Config.packSizeLength + orgData.Length];
