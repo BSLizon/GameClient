@@ -163,7 +163,8 @@ public class Network
                     byte[] orgData = _socketStruct.sendDataQ.Dequeue();
                     if (orgData.Length == 0)
                     {
-                        throw new Exception("wrong pack size.");
+                        //抛个事件控制台输出一下
+                        continue;
                     }
                     byte[] sendData = new byte[Config.packSizeLength + orgData.Length];
                     Buffer.BlockCopy(BitConverter.GetBytes((UInt32)System.Net.IPAddress.HostToNetworkOrder((UInt32)orgData.Length)), 0, sendData, 0, Config.packSizeLength);
