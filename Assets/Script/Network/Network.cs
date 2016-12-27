@@ -132,7 +132,7 @@ public class Network
 
                     while (_socketStruct.writeIndex - readIndex >= Config.packSizeLength)
                     {
-                        UInt32 length = BitConverter.ToUInt32(_socketStruct.recvBuf, readIndex);
+                        UInt32 length = (UInt32)System.Net.IPAddress.NetworkToHostOrder((long)BitConverter.ToUInt32(_socketStruct.recvBuf, readIndex));
                         if (length > Config.maxInboundPackSize)
                         {
                             throw new Exception("Pack out of size.");
@@ -162,7 +162,7 @@ public class Network
                 {
                     byte[] orgData = _socketStruct.sendDataQ.Dequeue();
                     byte[] sendData = new byte[Config.packSizeLength + orgData.Length];
-                    Buffer.BlockCopy(BitConverter.GetBytes((UInt32)orgData.Length), 0, sendData, 0, Config.packSizeLength);
+                    Buffer.BlockCopy(BitConverter.GetBytes((UInt32)System.Net.IPAddress.HostToNetworkOrder((UInt32)orgData.Length)), 0, sendData, 0, Config.packSizeLength);
                     Buffer.BlockCopy(orgData, 0, sendData, Config.packSizeLength, orgData.Length);
                     _socketStruct.socket.BeginSend(sendData, 0, sendData.Length, SocketFlags.None, null, null);
                 }
