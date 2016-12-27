@@ -5,4 +5,5 @@
 
 ## TODO
 PackLength大端字节序
+长度为0的包处理
 byte[]更换为Protobuf协议类
