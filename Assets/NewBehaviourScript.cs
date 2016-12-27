@@ -5,21 +5,18 @@ public class NewBehaviourScript : MonoBehaviour
 {
 	void Start ()
     {
-    }
-
-    public void func(Event e)
-    {
-        MyEvent me = e as MyEvent;
-        Debug.Log("asdf");
+        EventBus.Sub(typeof(Network.Event_RecvMessage), f);
     }
 
     void Update()
     {
         Network.getInstance().Update();
     }
+
+    void f(Event e)
+    {
+        Debug.Log((e as Network.Event_RecvMessage).data);
+    }
 }
 
-class MyEvent : Event
-{
 
-}

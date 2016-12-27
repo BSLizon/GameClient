@@ -16,6 +16,11 @@ public class Network
         public State state;
     }
 
+    public class Event_RecvMessage : Event
+    {
+        public byte[] data;
+    }
+
 
     public enum State
     {
@@ -31,6 +36,7 @@ public class Network
         public State state = State.DisConnected;
         public byte[] recvBuf;
         public int writeIndex;
+        public Queue<byte[]> sendDataQ;
     }
 
     volatile SocketStruct _socketStruct;
@@ -65,8 +71,9 @@ public class Network
         _socketStruct = new SocketStruct();
         _socketStruct.socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
         _socketStruct.state = State.Connecting;
-        _socketStruct.recvBuf = new byte[Config.maxPackSize * 2];
+        _socketStruct.recvBuf = new byte[Config.maxInboundPackSize * 2];
         _socketStruct.writeIndex = 0;
+        _socketStruct.sendDataQ = new Queue<byte[]>();
         new Thread(() => StartConnect(_socketStruct)).Start();
     }
 
@@ -126,14 +133,17 @@ public class Network
                     while (_socketStruct.writeIndex - readIndex >= Config.packSizeLength)
                     {
                         UInt32 length = BitConverter.ToUInt32(_socketStruct.recvBuf, readIndex);
-                        if (length > Config.maxPackSize)
+                        if (length > Config.maxInboundPackSize)
                         {
                             throw new Exception("Pack out of size.");
                         }
 
                         if (_socketStruct.writeIndex - readIndex >= length + Config.packSizeLength)
                         {
-                            //TODO::readIndex += Config.packSizeLength，读出length长的字节，这是Pack，解析并分发执行完毕
+                            byte[] data = new byte[length];
+                            Buffer.BlockCopy(_socketStruct.recvBuf, readIndex + Config.packSizeLength, data, 0, (int)length);
+                            EventBus.Notify(new Event_RecvMessage { data = data});
+
                             readIndex += (int)length + Config.packSizeLength;
                         }
                         else
@@ -148,13 +158,19 @@ public class Network
                     _socketStruct.writeIndex = reCount;
                 }
 
-                //Send
-                //需要发送队列，类型由Protobuf决定，转化为byte[]并推入socket
+                while (_socketStruct.sendDataQ.Count > 0)
+                {
+                    byte[] orgData = _socketStruct.sendDataQ.Dequeue();
+                    byte[] sendData = new byte[Config.packSizeLength + orgData.Length];
+                    Buffer.BlockCopy(BitConverter.GetBytes((UInt32)orgData.Length), 0, sendData, 0, Config.packSizeLength);
+                    Buffer.BlockCopy(orgData, 0, sendData, Config.packSizeLength, orgData.Length);
+                    _socketStruct.socket.BeginSend(sendData, 0, sendData.Length, SocketFlags.None, null, null);
+                }
             }
             catch (Exception e)
             {
                 _socketStruct.state = State.DisConnected;
-                Log.Error("handle pack error: " + e.ToString());
+                Log.Error("Handle pack error: " + e.ToString());
             }
         }
         else if (_socketStruct.state == State.DisConnected)
